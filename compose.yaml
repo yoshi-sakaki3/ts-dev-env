@@ -1,0 +1,62 @@
+# TypeScript 開発環境（Gold LINK DX）
+# 使い方は README.md を参照。普段は .\dev.ps1 up / down で操作する。
+#
+#   app      … Node.js + TypeScript（Hono の Web アプリ）  http://localhost:3000
+#   db       … PostgreSQL 17                               localhost:5433
+#   mailpit  … 送信メールを受け止めて表示する               http://localhost:8026
+#
+# ポートはすべて 127.0.0.1 に限定（同じネットワークの他の PC からは見えない）
+
+name: gldx-ts
+
+services:
+  app:
+    build:
+      context: ./docker/node
+      args:
+        NODE_VERSION: ${NODE_VERSION:-24}
+    working_dir: /app
+    command: ["pnpm", "dev"]
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    volumes:
+      - ./app:/app
+      # node_modules はコンテナ側に置く（Windows のフォルダに置くと遅く、壊れやすいため）
+      - node-modules:/app/node_modules
+      - pnpm-store:/pnpm/store
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-app}:${DB_PASSWORD:-app}@db:5432/${DB_NAME:-app}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      # Windows のフォルダを監視するときに必要（ファイル変更の検知）
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    ports:
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-app}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-app}
+      POSTGRES_DB: ${DB_NAME:-app}
+      TZ: Asia/Tokyo
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-app} -d ${DB_NAME:-app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-8026}:8025"
+
+volumes:
+  node-modules:
+  pnpm-store:
+  db-data:
