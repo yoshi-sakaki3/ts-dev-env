@@ -1,14 +1,14 @@
 {
-  // VS Code の「コンテナーで再度開く」で、Node.js コンテナの中を直接編集・実行できる
-  "name": "GLDX TypeScript",
-  "dockerComposeFile": ["../compose.yaml"],
-  "service": "app",
-  "workspaceFolder": "/app",
+  // VS Code の「コンテナーで再度開く」で「React」を選ぶと、画面側（web）のコンテナの中で編集・実行できる
+  "name": "GLDX TypeScript（React）",
+  "dockerComposeFile": ["../../compose.yaml"],
+  "service": "web",
+  "workspaceFolder": "/web",
   "shutdownAction": "stopCompose",
   "customizations": {
     "vscode": {
       "extensions": [
-        "dbaeumer.vscode-eslint",
+        "oxc.oxc-vscode",
         "esbenp.prettier-vscode",
         "vitest.explorer",
         "EditorConfig.EditorConfig"

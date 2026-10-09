@@ -27,6 +27,7 @@ switch ($Command) {
         Test-Docker
         Invoke-Compose build
         Invoke-Compose run --rm --no-deps app pnpm install
+        Invoke-Compose run --rm --no-deps web pnpm install
         Invoke-Compose up -d
         Write-Host ''
         Write-Host '準備ができました。' -ForegroundColor Green
@@ -40,11 +41,13 @@ switch ($Command) {
     'logs'    { Invoke-Compose logs -f --tail 100 @Rest }
     'sh'      { Invoke-Compose exec app bash }
     'pnpm'    { Invoke-Compose exec app pnpm @Rest }
-    'test'    { Invoke-Compose exec app pnpm test }
-    'check'   { Invoke-Compose exec app pnpm check }
+    'web'     { Invoke-Compose exec web pnpm @Rest }
+    'test'    { Invoke-Compose exec app pnpm test; Invoke-Compose exec web pnpm test }
+    'check'   { Invoke-Compose exec app pnpm check; Invoke-Compose exec web pnpm check }
     'db'      { Invoke-Compose exec db sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"' }
     'urls' {
-        Write-Host '  アプリ     http://localhost:3000'
+        Write-Host '  React 画面 http://localhost:5173'
+        Write-Host '  アプリ/API http://localhost:3000'
         Write-Host '  Mailpit    http://localhost:8026'
         Write-Host '  DB         localhost:5433（ユーザー app / パスワード app）'
     }
@@ -57,15 +60,17 @@ switch ($Command) {
 使い方: .\dev.ps1 <コマンド>
 
   setup        初回の準備（.env 作成・ビルド・pnpm install・起動）
+               既存の環境に React を足したあとも、もう一度 setup を実行する
   up / down    起動 / 停止
   restart      再起動
   rebuild      イメージを作り直して起動（Dockerfile を変えたとき）
   status       動いているサービスの一覧
   logs [名前]  ログを見る（例: .\dev.ps1 logs app）
   sh           アプリのコンテナの中に入る
-  pnpm ...     pnpm コマンド（例: .\dev.ps1 pnpm add zod）
-  test         テストを実行（Vitest）
-  check        型チェック・ESLint・テストをまとめて実行
+  pnpm ...     API 側の pnpm コマンド（例: .\dev.ps1 pnpm add zod）
+  web ...      React 側の pnpm コマンド（例: .\dev.ps1 web add react-router）
+  test         テストを実行（API 側と React 側の Vitest）
+  check        型チェック・コード検査・テストを両方まとめて実行
   db           PostgreSQL に接続
   urls         各画面の URL を表示
   clean        データごと全部消す（確認あり）
